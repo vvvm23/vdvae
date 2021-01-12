@@ -19,6 +19,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 """
+    Some helper functions for common constructs
+"""
+class ConvBuilder:
+    def _bconv(in_dim, out_dim, kernel_size, stride, padding):
+        conv = nn.Conv2d(in_dim, out_dim, kernel_size, stride=stride, padding=padding)
+    def b1x1(in_dim, out_dim):
+        return ConvBuilder._bconv(in_dim, out_dim, 1, 1, 0)
+    def b3x3(in_dim, out_dim):
+        return ConvBuilder._bconv(in_dim, out_dim, 3, 1, 1)
+
+"""
     Helper module to call super().__init__() for us
 """
 class HelperModule(nn.Module):
@@ -33,10 +44,19 @@ class HelperModule(nn.Module):
     Encoder Components
 """
 class ResidualBlock(HelperModule):
-    def build(self):
-        pass
+    def build(self, in_width, hidden_width): # TODO: Do we need out_width?
+        self.conv = nn.Sequential(
+            nn.GELU(), ConvBuilder.b1x1(in_width, hidden_width),
+            nn.GELU(), ConvBuilder.b3x3(hidden_width, hidden_width),
+            nn.GELU(), ConvBuilder.b3x3(hidden_width, hidden_width),
+            nn.GELU(), ConvBuilder.b1x1(hidden_width, in_width)
+        )
+        self.gate = nn.Parameter(torch.tensor(0.0))
+
     def forward(self, x):
-        pass
+        xh = self.conv(x)
+        y = x + self.gate*xh
+        return y
 
 class EncoderBlock(HelperModule):
     def build(self):
