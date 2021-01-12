@@ -77,10 +77,19 @@ class EncoderBlock(HelperModule):
         return y, a # y is input to next block, a is activations to topdown layer
 
 class Encoder(HelperModule):
-    def build(self):
-        pass
+    def build(self, in_dim, hidden_width, nb_encoder_blocks, nb_res_blocks=3, bottleneck_ratio=0.5, downscale_rate=2):
+        self.in_conv = ConvBuilder.b3x3(in_dim, hidden_width)
+        self.enc_blocks = nn.ModuleList([
+            EncoderBlock(hidden_width, nb_res_blocks, bottleneck_ratio, downscale_rate)
+        for _ in range(nb_encoder_blocks)])
+
     def forward(self, x):
-        pass
+        x = self.in_conv(x)
+        activations = [x]
+        for b in self.enc_blocks:
+            x, a = b(x)
+            activations.append(a)
+        return activations
 
 """
     Decoder Components
@@ -113,7 +122,8 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    enc_block = EncoderBlock(8, 3, 0.5, 2)
-    x = torch.randn(1, 8, 16, 16)
-    y, a = enc_block(x)
-    print(y.shape, a.shape)
+    encoder = Encoder(3, 16, 4)
+    x = torch.randn(1, 3, 128, 128)
+    activations = encoder(x)
+    for a in activations:
+        print(a.shape)
