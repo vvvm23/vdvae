@@ -46,24 +46,35 @@ class HelperModule(nn.Module):
 """
 class ResidualBlock(HelperModule):
     def build(self, in_width, hidden_width): # hidden_width should function as a bottleneck!
-        self.conv = nn.Sequential(
-            nn.GELU(), ConvBuilder.b1x1(in_width, hidden_width),
-            nn.GELU(), ConvBuilder.b3x3(hidden_width, hidden_width),
-            nn.GELU(), ConvBuilder.b3x3(hidden_width, hidden_width),
-            nn.GELU(), ConvBuilder.b1x1(hidden_width, in_width)
-        )
+        self.conv = nn.ModuleList([
+            ConvBuilder.b1x1(in_width, hidden_width),
+            ConvBuilder.b3x3(hidden_width, hidden_width),
+            ConvBuilder.b3x3(hidden_width, hidden_width),
+            ConvBuilder.b1x1(hidden_width, in_width)
+        ])
         self.gate = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, x):
-        xh = self.conv(x)
+        xh = x
+        for l in self.conv:
+            xh = l(F.gelu(xh))
         y = x + self.gate*xh
         return y
 
 class EncoderBlock(HelperModule):
-    def build(self, in_dim, nb_r_blocks, downscale_rate):
-        pass
+    def build(self, in_dim, nb_r_blocks, bottleneck_ratio, downscale_rate):
+        self.downscale_rate = downscale_rate
+        self.res_blocks = nn.ModuleList([
+            ResidualBlock(in_dim, int(in_dim*bottleneck_ratio))
+        for _ in range(nb_r_blocks)])
+        
     def forward(self, x):
-        pass
+        y = x
+        for l in self.res_blocks:
+            y = l(y)
+        a = y
+        y = F.avg_pool2d(y, kernel_size=self.downscale_rate, stride=self.downscale_rate)
+        return y, a # y is input to next block, a is activations to topdown layer
 
 class Encoder(HelperModule):
     def build(self):
@@ -102,6 +113,7 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    res_block = ResidualBlock(8, 4)
-    x = torch.randn(1, 8, 4, 4)
-    print(res_block(x).shape)
+    enc_block = EncoderBlock(8, 3, 0.5, 2)
+    x = torch.randn(1, 8, 16, 16)
+    y, a = enc_block(x)
+    print(y.shape, a.shape)
