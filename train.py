@@ -24,7 +24,7 @@ def load_dataset(dataset, batch_size):
         exit()
 
     train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True, batch_size=batch_size)
+    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
 
     return train_loader, test_loader
 
@@ -91,8 +91,8 @@ if __name__ == "__main__":
 
     model = VAE(HPS.in_channels, HPS.h_width, HPS.m_width, HPS.z_dim, 
                 nb_blocks=HPS.nb_blocks, nb_res_blocks=HPS.nb_res_blocks, scale_rate=HPS.scale_rate).to(device)
-
-    optim = torch.optim.Adam(model.parameters(), lr=HPS.lr)
+    info(f"Number of trainable parameters {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    optim = torch.optim.Adam(model.parameters(), lr=HPS.lr, weight_decay=HPS.decay)
     crit = torch.nn.MSELoss(reduction='none')
 
     for ei in range(HPS.nb_epochs):

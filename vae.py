@@ -18,6 +18,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import numpy as np
+
 """
     Some helper functions for common constructs
 """
@@ -99,6 +101,10 @@ class Encoder(HelperModule):
             EncoderBlock(hidden_width, middle_width, nb_res_blocks, 1 if i==(nb_encoder_blocks-1) else downscale_rate)
         for i in range(nb_encoder_blocks)])
 
+        for be in self.enc_blocks:
+            for br in be.res_blocks:
+                br.conv[-1].weight.data *= np.sqrt(1 / (nb_encoder_blocks*nb_res_blocks))
+
     def forward(self, x):
         x = self.in_conv(x)
         activations = [x]
@@ -169,6 +175,11 @@ class Decoder(HelperModule):
             DecoderBlock(in_dim, middle_width, z_dim, nb_td_blocks, 1 if i == 0 else upscale_rate)
          for i in range(nb_decoder_blocks)])
         self.out_conv = ConvBuilder.b3x3(in_dim, out_dim)
+
+        for bd in self.dec_blocks:
+            for bt in bd.td_blocks:
+                bt.z_conv.weight.data *= np.sqrt(1 / (nb_decoder_blocks*nb_td_blocks))
+                bt.out_res.conv[-1].weight.data *= np.sqrt(1 / (nb_decoder_blocks*nb_td_blocks))
 
     def forward(self, activations):
         activations = activations[::-1]
