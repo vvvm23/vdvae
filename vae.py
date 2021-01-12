@@ -146,10 +146,19 @@ class TopDownBlock(HelperModule):
         return x, kl
 
 class DecoderBlock(HelperModule):
-    def build(self):
-        pass
-    def forward(self, x):
-        pass
+    def build(self, in_dim, middle_width, z_dim, nb_td_blocks, upscale_rate):
+        self.upscale_rate = upscale_rate
+        self.td_blocks = nn.ModuleList([
+            TopDownBlock(in_dim, middle_width, z_dim)
+        for _ in range(nb_td_blocks)])
+    def forward(self, x, a):
+        x = F.interpolate(x, scale_factor=self.upscale_rate)
+        block_kl = []
+        for b in self.td_blocks:
+            x, kl = b(x, a)
+            block_kl.append(kl)
+        return x, block_kl
+
 
 class Decoder(HelperModule):
     def build(self):
@@ -167,8 +176,11 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    td_block = TopDownBlock(16, 8, 4)
-    x = torch.randn(1, 16, 8, 8)
+    decoder_block = DecoderBlock(16, 8, 4, 3, 2)
+    x = torch.randn(1, 16, 4, 4)
     a = torch.randn(1, 16, 8, 8)
     
-    y, kl = td_block(x, a)
+    y, kl = decoder_block(x, a)
+    print(y.shape)
+    for k in kl:
+        print(k.shape)
