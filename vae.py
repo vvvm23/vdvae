@@ -75,10 +75,10 @@ class ResidualBlock(HelperModule):
         return y
 
 class EncoderBlock(HelperModule):
-    def build(self, in_dim, nb_r_blocks, bottleneck_ratio, downscale_rate):
+    def build(self, in_dim, middle_width, nb_r_blocks, downscale_rate):
         self.downscale_rate = downscale_rate
         self.res_blocks = nn.ModuleList([
-            ResidualBlock(in_dim, int(in_dim*bottleneck_ratio))
+            ResidualBlock(in_dim, middle_width)
         for _ in range(nb_r_blocks)])
         
     def forward(self, x):
@@ -90,11 +90,11 @@ class EncoderBlock(HelperModule):
         return y, a # y is input to next block, a is activations to topdown layer
 
 class Encoder(HelperModule):
-    def build(self, in_dim, hidden_width, nb_encoder_blocks, nb_res_blocks=3, bottleneck_ratio=0.5, downscale_rate=2):
+    def build(self, in_dim, hidden_width, middle_width, nb_encoder_blocks, nb_res_blocks=3, downscale_rate=2):
         self.in_conv = ConvBuilder.b3x3(in_dim, hidden_width)
         self.enc_blocks = nn.ModuleList([
-            EncoderBlock(hidden_width, nb_res_blocks, bottleneck_ratio, downscale_rate)
-        for _ in range(nb_encoder_blocks)])
+            EncoderBlock(hidden_width, middle_width, nb_res_blocks, 1 if i==(nb_encoder_blocks-1) else downscale_rate)
+        for i in range(nb_encoder_blocks)])
 
     def forward(self, x):
         x = self.in_conv(x)
@@ -186,9 +186,7 @@ class Decoder(HelperModule):
 """
 class VAE(HelperModule):
     def build(self, in_dim, hidden_width, middle_width, z_dim, nb_blocks=4, nb_res_blocks=3, scale_rate=2):
-        # TODO: replace bottleneck ratio with plain middle_width like decoder
-        # TODO: Don't pool in final encoder layer
-        self.encoder = Encoder(in_dim, hidden_width, nb_blocks, nb_res_blocks=nb_res_blocks, bottleneck_ratio=middle_width / hidden_width, downscale_rate=scale_rate)
+        self.encoder = Encoder(in_dim, hidden_width, middle_width, nb_blocks, nb_res_blocks=nb_res_blocks, downscale_rate=scale_rate)
         self.decoder = Decoder(hidden_width, middle_width, in_dim, z_dim, nb_blocks, nb_td_blocks=nb_res_blocks, upscale_rate=scale_rate)
     def forward(self, x):
         activations = self.encoder(x)
