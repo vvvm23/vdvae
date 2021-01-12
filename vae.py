@@ -151,6 +151,7 @@ class DecoderBlock(HelperModule):
         self.td_blocks = nn.ModuleList([
             TopDownBlock(in_dim, middle_width, z_dim)
         for _ in range(nb_td_blocks)])
+
     def forward(self, x, a):
         x = F.interpolate(x, scale_factor=self.upscale_rate)
         block_kl = []
@@ -159,12 +160,26 @@ class DecoderBlock(HelperModule):
             block_kl.append(kl)
         return x, block_kl
 
-
 class Decoder(HelperModule):
-    def build(self):
-        pass
-    def forward(self, x):
-        pass
+    def build(self, in_dim, middle_width, out_dim, z_dim, nb_decoder_blocks, nb_td_blocks=3, upscale_rate=2):
+        self.dec_blocks = nn.ModuleList([
+            DecoderBlock(in_dim, middle_width, z_dim, nb_td_blocks, 1 if i == 0 else upscale_rate)
+         for i in range(nb_decoder_blocks)])
+        self.out_conv = ConvBuilder.b3x3(in_dim, out_dim)
+
+    def forward(self, activations):
+        activations = activations[::-1]
+        x = None
+        decoder_kl = []
+        for i, b in enumerate(self.dec_blocks):
+            a = activations[i]
+            if x == None:
+                x = torch.zeros_like(a)
+            x, block_kl = b(x, a)
+            decoder_kl.extend(block_kl)
+
+        x = self.out_conv(x)
+        return x
 
 """
     Main VAE class
@@ -176,11 +191,10 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    decoder_block = DecoderBlock(16, 8, 4, 3, 2)
-    x = torch.randn(1, 16, 4, 4)
-    a = torch.randn(1, 16, 8, 8)
-    
-    y, kl = decoder_block(x, a)
+    encoder = Encoder(3, 16, 4)
+    decoder = Decoder(16, 8, 3, 4, 4)
+
+    x = torch.randn(1, 3, 128, 128)
+    activations = encoder(x)
+    y = decoder(activations)
     print(y.shape)
-    for k in kl:
-        print(k.shape)
