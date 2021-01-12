@@ -1,4 +1,4 @@
-class Checkpoint(dict):
+class Hyperparameters(dict):
     def __getattr__(self, attr):
         try:
             return self[attr]
