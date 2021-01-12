@@ -58,14 +58,17 @@ class HelperModule(nn.Module):
     Encoder Components
 """
 class ResidualBlock(HelperModule):
-    def build(self, in_width, hidden_width): # hidden_width should function as a bottleneck!
+    def build(self, in_width, hidden_width, rezero=True): # hidden_width should function as a bottleneck!
         self.conv = nn.ModuleList([
             ConvBuilder.b1x1(in_width, hidden_width),
             ConvBuilder.b3x3(hidden_width, hidden_width),
             ConvBuilder.b3x3(hidden_width, hidden_width),
             ConvBuilder.b1x1(hidden_width, in_width)
         ])
-        self.gate = nn.Parameter(torch.tensor(0.0))
+        if rezero:
+            self.gate = nn.Parameter(torch.tensor(0.0))
+        else:
+            self.gate = 1.0
 
     def forward(self, x):
         xh = x
@@ -195,7 +198,8 @@ class VAE(HelperModule):
 
 if __name__ == "__main__":
     import torchvision
-    vae = VAE(3, 16, 8, 4)
-    x = torch.randn(1, 3, 128, 128)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    vae = VAE(3, 16, 8, 4).to(device)
+    x = torch.randn(1, 3, 1024, 1024).to(device)
     y = vae(x)
     torchvision.utils.save_image(y, "model-test.png")
