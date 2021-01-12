@@ -1,9 +1,24 @@
 # Very Deep VAEs (VD-VAE) [Work in Progress]
+
+> Very much a work in progress and mostly untested. Patience people!
+
 PyTorch implementation of Very Deep VAE (VD-VAE) from the paper "Very Deep VAEs Generalize Autoregressive Models and Can Outperform Them on Images"
 
 Based off OpenAI implementation found [here](https://github.com/openai/vdvae) but removing clutter (paper visualizations, parallel compute, large datasets) to focus purely on the underlying architecture.
 
 Original paper can be found [here](https://arxiv.org/abs/2011.10650).
+
+## Modifications
+- Replacing default residual connections with ReZero connections (see citations). Might enable faster convergence at larger depths.
+
+## Task List
+- [x] Basic architecture
+- [ ] Training script
+- [ ] Checkpointing
+- [ ] Sampling functions
+- [ ] Weight / bias initialisation (as in paper)
+- [ ] Gradient skipping (as in paper)
+- [ ] Explore further modifications
 
 ### Citations
 ```
