@@ -24,6 +24,7 @@ import torch.nn.functional as F
 class ConvBuilder:
     def _bconv(in_dim, out_dim, kernel_size, stride, padding):
         conv = nn.Conv2d(in_dim, out_dim, kernel_size, stride=stride, padding=padding)
+        return conv
     def b1x1(in_dim, out_dim):
         return ConvBuilder._bconv(in_dim, out_dim, 1, 1, 0)
     def b3x3(in_dim, out_dim):
@@ -44,7 +45,7 @@ class HelperModule(nn.Module):
     Encoder Components
 """
 class ResidualBlock(HelperModule):
-    def build(self, in_width, hidden_width): # TODO: Do we need out_width?
+    def build(self, in_width, hidden_width): # hidden_width should function as a bottleneck!
         self.conv = nn.Sequential(
             nn.GELU(), ConvBuilder.b1x1(in_width, hidden_width),
             nn.GELU(), ConvBuilder.b3x3(hidden_width, hidden_width),
@@ -59,7 +60,7 @@ class ResidualBlock(HelperModule):
         return y
 
 class EncoderBlock(HelperModule):
-    def build(self):
+    def build(self, in_dim, nb_r_blocks, downscale_rate):
         pass
     def forward(self, x):
         pass
@@ -101,4 +102,6 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    print("Aloha, World!")
+    res_block = ResidualBlock(8, 4)
+    x = torch.randn(1, 8, 4, 4)
+    print(res_block(x).shape)
