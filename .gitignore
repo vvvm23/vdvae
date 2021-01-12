@@ -129,4 +129,6 @@ dmypy.json
 .pyre/
 
 # --- PYTHON TEMPLATE ENDS HERE --- #
-*.png
+imgs/
+data/
+saved_checkpoints/

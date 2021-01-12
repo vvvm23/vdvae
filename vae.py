@@ -58,7 +58,7 @@ class HelperModule(nn.Module):
     Encoder Components
 """
 class ResidualBlock(HelperModule):
-    def build(self, in_width, hidden_width, rezero=True): # hidden_width should function as a bottleneck!
+    def build(self, in_width, hidden_width, rezero=False): # hidden_width should function as a bottleneck!
         self.conv = nn.ModuleList([
             ConvBuilder.b1x1(in_width, hidden_width),
             ConvBuilder.b3x3(hidden_width, hidden_width),
@@ -137,13 +137,13 @@ class TopDownBlock(HelperModule):
         qm, qv = self.cat_conv(xa).chunk(2, dim=1) # Calculate q distribution parameters. Chunk into 2 (first z_dim is mean, second is variance)
         pfeat = self.prior(x)
         pm, pv, px = pfeat[:, :self.z_dim], pfeat[:, self.z_dim:self.z_dim*2], pfeat[:, self.z_dim*2:]
-        x += px
+        x = x + px
 
         z = draw_gaussian_diag_samples(qm, qv)
         kl = gaussian_analytical_kl(qm, pm, qv, pv)
 
         z = self.z_conv(z)
-        x += z
+        x = x + z
         x = self.out_res(x)
 
         return x, kl
@@ -182,7 +182,7 @@ class Decoder(HelperModule):
             decoder_kl.extend(block_kl)
 
         x = self.out_conv(x)
-        return x
+        return x, decoder_kl
 
 """
     Main VAE class
@@ -193,13 +193,13 @@ class VAE(HelperModule):
         self.decoder = Decoder(hidden_width, middle_width, in_dim, z_dim, nb_blocks, nb_td_blocks=nb_res_blocks, upscale_rate=scale_rate)
     def forward(self, x):
         activations = self.encoder(x)
-        y = self.decoder(activations)
-        return y
+        y, decoder_kl = self.decoder(activations)
+        return y, decoder_kl
 
 if __name__ == "__main__":
     import torchvision
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    vae = VAE(3, 16, 8, 4).to(device)
-    x = torch.randn(1, 3, 1024, 1024).to(device)
-    y = vae(x)
+    vae = VAE(3, 64, 32, 32, nb_blocks=6).to(device)
+    x = torch.randn(1, 3, 256, 256).to(device)
+    y, kls = vae(x)
     torchvision.utils.save_image(y, "model-test.png")
