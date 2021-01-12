@@ -185,16 +185,19 @@ class Decoder(HelperModule):
     Main VAE class
 """
 class VAE(HelperModule):
-    def build(self):
-        pass
+    def build(self, in_dim, hidden_width, middle_width, z_dim, nb_blocks=4, nb_res_blocks=3, scale_rate=2):
+        # TODO: replace bottleneck ratio with plain middle_width like decoder
+        # TODO: Don't pool in final encoder layer
+        self.encoder = Encoder(in_dim, hidden_width, nb_blocks, nb_res_blocks=nb_res_blocks, bottleneck_ratio=middle_width / hidden_width, downscale_rate=scale_rate)
+        self.decoder = Decoder(hidden_width, middle_width, in_dim, z_dim, nb_blocks, nb_td_blocks=nb_res_blocks, upscale_rate=scale_rate)
     def forward(self, x):
-        pass
+        activations = self.encoder(x)
+        y = self.decoder(activations)
+        return y
 
 if __name__ == "__main__":
-    encoder = Encoder(3, 16, 4)
-    decoder = Decoder(16, 8, 3, 4, 4)
-
+    import torchvision
+    vae = VAE(3, 16, 8, 4)
     x = torch.randn(1, 3, 128, 128)
-    activations = encoder(x)
-    y = decoder(activations)
-    print(y.shape)
+    y = vae(x)
+    torchvision.utils.save_image(y, "model-test.png")
