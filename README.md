@@ -13,7 +13,7 @@ Original paper can be found [here](https://arxiv.org/abs/2011.10650).
 
 ## Task List
 - [x] Basic architecture
-- [ ] Training script
+- [o] Training script
 - [ ] Checkpointing
 - [ ] Sampling functions
 - [ ] Weight / bias initialisation (as in paper)
