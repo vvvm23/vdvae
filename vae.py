@@ -31,6 +31,19 @@ class ConvBuilder:
         return ConvBuilder._bconv(in_dim, out_dim, 3, 1, 1)
 
 """
+    Diagonal Gaussian Distribution and loss.
+    Taken directly from OpenAI implementation 
+    Decorators means these functions will be compiled as TorchScript
+"""
+@torch.jit.script
+def gaussian_analytical_kl(mu1, mu2, logsigma1, logsigma2):
+    return -0.5 + logsigma2 - logsigma1 + 0.5 * (logsigma1.exp() ** 2 + (mu1 - mu2) ** 2) / (logsigma2.exp() ** 2)
+@torch.jit.script
+def draw_gaussian_diag_samples(mu, logsigma):
+    eps = torch.empty_like(mu).normal_(0., 1.)
+    return torch.exp(logsigma) * eps + mu
+
+"""
     Helper module to call super().__init__() for us
 """
 class HelperModule(nn.Module):
@@ -94,11 +107,43 @@ class Encoder(HelperModule):
 """
     Decoder Components
 """
-class TopDownBlock(HelperModule):
-    def build(self):
-        pass
+class Block(HelperModule):
+    def build(self, in_width, hidden_width, out_width): # hidden_width should function as a bottleneck!
+        self.conv = nn.ModuleList([
+            ConvBuilder.b1x1(in_width, hidden_width),
+            ConvBuilder.b3x3(hidden_width, hidden_width),
+            ConvBuilder.b3x3(hidden_width, hidden_width),
+            ConvBuilder.b1x1(hidden_width, out_width)
+        ])
+
     def forward(self, x):
-        pass
+        for l in self.conv:
+            x = l(F.gelu(x))
+        return x
+
+class TopDownBlock(HelperModule):
+    def build(self, in_width, middle_width, z_dim):
+        self.cat_conv = Block(in_width*2, middle_width, z_dim*2) # parameterises mean and variance
+        self.prior = Block(in_width, middle_width, z_dim*2 + in_width) # parameterises mean, variance and xh
+        self.out_res = ResidualBlock(in_width, middle_width)
+        self.z_conv = ConvBuilder.b1x1(z_dim, in_width)
+        self.z_dim = z_dim
+
+    def forward(self, x, a):
+        xa = torch.cat([x,a], dim=1)
+        qm, qv = self.cat_conv(xa).chunk(2, dim=1) # Calculate q distribution parameters. Chunk into 2 (first z_dim is mean, second is variance)
+        pfeat = self.prior(x)
+        pm, pv, px = pfeat[:, :self.z_dim], pfeat[:, self.z_dim:self.z_dim*2], pfeat[:, self.z_dim*2:]
+        x += px
+
+        z = draw_gaussian_diag_samples(qm, qv)
+        kl = gaussian_analytical_kl(qm, pm, qv, pv)
+
+        z = self.z_conv(z)
+        x += z
+        x = self.out_res(x)
+
+        return x, kl
 
 class DecoderBlock(HelperModule):
     def build(self):
@@ -122,8 +167,8 @@ class VAE(HelperModule):
         pass
 
 if __name__ == "__main__":
-    encoder = Encoder(3, 16, 4)
-    x = torch.randn(1, 3, 128, 128)
-    activations = encoder(x)
-    for a in activations:
-        print(a.shape)
+    td_block = TopDownBlock(16, 8, 4)
+    x = torch.randn(1, 16, 8, 8)
+    a = torch.randn(1, 16, 8, 8)
+    
+    y, kl = td_block(x, a)
