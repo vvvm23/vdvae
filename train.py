@@ -8,6 +8,8 @@ from torchvision.utils import save_image
 import numpy as np
 from tqdm import tqdm
 
+import itertools
+
 from hps import HPS
 from helper import info, error, warning
 from helper import get_device
@@ -26,7 +28,8 @@ def load_dataset(dataset, batch_size):
     train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
 
-    return train_loader, test_loader
+    # return train_loader, test_loader
+    return test_loader, test_loader
 
 def train(model, loader, optim, crit, device):
     total_loss, r_loss, kl_loss = 0.0, 0.0, 0.0
@@ -43,7 +46,7 @@ def train(model, loader, optim, crit, device):
             rpp += k.sum(dim=(1,2,3))
         rpp /= np.prod(x.shape[1:])
         
-        elbo = (rpp + rl).mean()
+        elbo = (rpp*0.25 + rl).mean()
         elbo.backward()
         optim.step()
 
@@ -71,7 +74,7 @@ def evaluate(model, loader, optim, crit, device, img_id=None):
                 rpp += k.sum(dim=(1,2,3))
             rpp /= np.prod(x.shape[1:])
             
-            elbo = (rpp + rl).mean()
+            elbo = (rpp*0.25 + rl).mean()
             rl = rl.mean()
             kl = rpp.mean()
 
@@ -95,8 +98,15 @@ if __name__ == "__main__":
     optim = torch.optim.Adam(model.parameters(), lr=HPS.lr, weight_decay=HPS.decay)
     crit = torch.nn.MSELoss(reduction='none')
 
-    for ei in range(HPS.nb_epochs):
+    nb_iterations = 0
+    # for ei in range(HPS.nb_epochs):
+    for ei in itertools.count():
         train_loss, r_loss, kl_loss = train(model, train_loader, optim, crit, device)
-        info(f"training, epoch {ei+1}/{HPS.nb_epochs} \t loss: {train_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
+        nb_iterations += len(train_loader)
+
+        info(f"training, epoch {ei+1} \t iter: {nb_iterations} \t loss: {train_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
         eval_loss, r_loss, kl_loss = evaluate(model, test_loader, optim, crit, device, img_id=ei)
-        info(f"evaluate, epoch {ei+1}/{HPS.nb_epochs} \t loss: {eval_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
+        info(f"evaluate, epoch {ei+1}/{HPS.nb_epochs} \t iter: {nb_iterations} \t loss: {eval_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
+
+        if nb_iterations > HPS.nb_iterations:
+            break

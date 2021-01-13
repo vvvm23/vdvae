@@ -19,9 +19,9 @@ HPS['h_width'] = 384
 HPS['m_width'] = 96
 HPS['z_dim'] = 16
 HPS['nb_blocks'] = 5
-HPS['nb_res_blocks'] = 6
+HPS['nb_res_blocks'] = 8
 HPS['scale_rate'] = 2
 
-HPS['nb_epochs'] = 200
+HPS['nb_iterations'] = 1_100_00
 HPS['lr'] = 2e-4
 HPS['decay'] = 1e-2
