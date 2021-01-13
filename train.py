@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
         if HPS.checkpoint > 0 and ei > 0 and ei % HPS.checkpoint == 0:
             # TODO: Replace with full checkpointing
-            torch.save(model.state_dict())
+            torch.save(model.state_dict(), f"saved_checkpoints/vdvae-{ei}.pt")
 
         if nb_iterations > HPS.nb_iterations:
             break
