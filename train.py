@@ -6,14 +6,17 @@ import torchvision.transforms as transforms
 from torchvision.utils import save_image
 
 import numpy as np
-from tqdm import tqdm
-
 import itertools
 
 from hps import HPS
 from helper import info, error, warning
 from helper import get_device
 from vae import VAE
+
+if HPS.tqdm:
+    from tqdm import tqdm
+else:
+    tqdm = lambda x: (i for i in x) # identity generator
 
 def load_dataset(dataset, batch_size):
     if dataset == 'cifar10':
@@ -107,6 +110,10 @@ if __name__ == "__main__":
         info(f"training, epoch {ei+1} \t iter: {nb_iterations} \t loss: {train_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
         eval_loss, r_loss, kl_loss = evaluate(model, test_loader, optim, crit, device, img_id=ei)
         info(f"evaluate, epoch {ei+1}/{HPS.nb_epochs} \t iter: {nb_iterations} \t loss: {eval_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
+
+        if HPS.checkpoint > 0 and ei > 0 and ei % HPS.checkpoint == 0:
+            # TODO: Replace with full checkpointing
+            torch.save(model.state_dict())
 
         if nb_iterations > HPS.nb_iterations:
             break

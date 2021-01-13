@@ -10,6 +10,8 @@ class Hyperparameters(dict):
 
 HPS = Hyperparameters()
 HPS['cuda'] = True
+HPS['checkpoint'] = 25
+HPS['tqdm'] = True
 
 HPS['dataset'] = 'cifar10'
 HPS['batch_size'] = 32
