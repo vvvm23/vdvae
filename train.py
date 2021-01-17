@@ -82,6 +82,9 @@ def train(model, loader, optim, crit, device):
     return total_loss / len(loader), r_loss / len(loader), kl_loss / len(loader)
 
 def evaluate(model, loader, optim, crit, device, img_id=None):
+    sample = model.sample(4)
+    save_image(sample, f"imgs/vdvae-sample-{img_id}.png", normalize=True, range=(-1, 1))
+
     total_loss, r_loss, kl_loss = 0.0, 0.0, 0.0
     with torch.no_grad():
         model.eval()

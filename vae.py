@@ -193,7 +193,7 @@ class Decoder(HelperModule):
         self.dec_blocks = nn.ModuleList([
             DecoderBlock(in_dim, middle_width, z_dim, nb_td_blocks, 1 if i == 0 else upscale_rate)
          for i in range(nb_decoder_blocks)])
-        self.out_dim = out_dim
+        self.in_dim = in_dim
         self.out_conv = ConvBuilder.b3x3(in_dim, out_dim)
 
         for bd in self.dec_blocks:
@@ -219,7 +219,7 @@ class Decoder(HelperModule):
         x = None
         for b in self.dec_blocks:
             if x == None:
-                x = torch.zeros(nb_samples, self.out_dim, 4, 4)
+                x = torch.zeros(nb_samples, self.in_dim, 4, 4).to('cuda') # TODO: Variable device and size
             x = b.sample(x)
         x = self.out_conv(x)
         return x
