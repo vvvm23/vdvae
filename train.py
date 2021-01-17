@@ -29,6 +29,14 @@ def load_dataset(dataset, batch_size):
 
         train_dataset = torchvision.datasets.CIFAR10('data', train=True, download=True, transform=dataset_transforms)
         test_dataset = torchvision.datasets.CIFAR10('data', train=False, download=True, transform=dataset_transforms)
+    elif dataset == 'stl10':
+        dataset_transforms = transforms.Compose([
+            transforms.RandomRotation(5),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        train_dataset = torchvision.datasets.STL10('data', split='train+unlabeled', download=True, transform=dataset_transforms)
+        test_dataset = torchvision.datasets.STL10('data', split='test', download=True, transform=dataset_transforms)
     elif dataset == 'mnist':
         dataset_transforms = transforms.Compose([
             transforms.RandomRotation(5),
@@ -90,7 +98,7 @@ def evaluate(model, loader, optim, crit, device, img_id=None):
         return total_loss / len(loader), r_loss / len(loader), kl_loss / len(loader)
 
 if __name__ == "__main__":
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
     device = get_device(HPS.cuda)
     train_loader, test_loader = load_dataset(HPS.dataset, HPS.batch_size)
 

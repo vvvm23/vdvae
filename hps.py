@@ -13,14 +13,14 @@ HPS['cuda'] = True
 HPS['checkpoint'] = 1
 HPS['tqdm'] = True
 
-HPS['dataset'] = 'cifar10' # cifar10 | mnist
-HPS['batch_size'] = 32
+HPS['dataset'] = 'stl10' # cifar10 | stl10 | mnist
+HPS['batch_size'] = 16
 
 HPS['in_channels'] = 3
-HPS['h_width'] = 64
-HPS['m_width'] = 32
+HPS['h_width'] = 128
+HPS['m_width'] = 96
 HPS['z_dim'] = 16
-HPS['nb_blocks'] = 4
+HPS['nb_blocks'] = 5
 HPS['nb_res_blocks'] = 2
 HPS['scale_rate'] = 2
 
