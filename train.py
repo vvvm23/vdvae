@@ -45,7 +45,6 @@ def load_dataset(dataset, batch_size):
     train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
 
-    # return train_loader, test_loader
     return test_loader, test_loader
 
 def vae_loss(x, model, crit):
@@ -57,33 +56,16 @@ def vae_loss(x, model, crit):
         rpp += k.sum(dim=(1,2,3))
     rpp /= np.prod(x.shape[1:])
     elbo = (rpp + rl*100).mean()
-    return elbo, rl.mean(), rpp.mean()
+    return y, elbo, rl.mean(), rpp.mean()
 
 def train(model, loader, optim, crit, device):
     total_loss, r_loss, kl_loss = 0.0, 0.0, 0.0
     model.train()
     for x, _ in tqdm(loader):
         optim.zero_grad()
-        elbo, rl, kl = vae_loss(x, model, crit)
+        _, elbo, rl, kl = vae_loss(x, model, crit)
         elbo.backward()
         optim.step()
-
-        # x = x.to(device)
-
-        # y, decoder_kl = model(x)
-        # rl = crit(x, y).mean(dim=(1,2,3))
-
-        # rpp = torch.zeros_like(rl)
-        # for k in decoder_kl:
-            # rpp += k.sum(dim=(1,2,3))
-        # rpp /= np.prod(x.shape[1:])
-        
-        # elbo = (rpp + rl*100).mean()
-        # elbo.backward()
-        # optim.step()
-
-        # rl = rl.mean()
-        # kl = rpp.mean()
 
         total_loss += elbo
         r_loss += rl
@@ -96,27 +78,14 @@ def evaluate(model, loader, optim, crit, device, img_id=None):
         model.eval()
         for i, (x, _) in enumerate(tqdm(loader)):
             optim.zero_grad()
-            elbo, rl, kl = vae_loss(x, model, crit)
-            # x = x.to(device)
-
-            # y, decoder_kl = model(x)
-            # rl = crit(x, y).mean(dim=(1,2,3))
-
-            # rpp = torch.zeros_like(rl)
-            # for k in decoder_kl:
-                # rpp += k.sum(dim=(1,2,3))
-            # rpp /= np.prod(x.shape[1:])
-            
-            # elbo = (rpp + rl*100).mean()
-            # rl = rl.mean()
-            # kl = rpp.mean()
+            y, elbo, rl, kl = vae_loss(x, model, crit)
 
             total_loss += elbo
             r_loss += rl
             kl_loss += kl
 
             if img_id != None and i == 0:
-                save_image(y, f"imgs/eval-recon-{img_id}.png")
+                save_image(y, f"imgs/eval-recon-{img_id}.png", normalize=True, range=(-1, 1))
 
         return total_loss / len(loader), r_loss / len(loader), kl_loss / len(loader)
 
@@ -131,7 +100,7 @@ if __name__ == "__main__":
     optim = torch.optim.Adam(model.parameters(), lr=HPS.lr, weight_decay=HPS.decay)
     crit = torch.nn.MSELoss(reduction='none')
 
-    save_id = str(datetime.date.today())
+    save_id = str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
     nb_iterations = 0
     for ei in itertools.count():
