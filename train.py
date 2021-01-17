@@ -10,6 +10,7 @@ import itertools
 import datetime
 
 from hps import HPS
+from checkpoint import Checkpoint
 from helper import info, error, warning
 from helper import get_device
 from vae import VAE

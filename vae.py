@@ -101,6 +101,8 @@ class Encoder(HelperModule):
             EncoderBlock(hidden_width, middle_width, nb_res_blocks, 1 if i==(nb_encoder_blocks-1) else downscale_rate)
         for i in range(nb_encoder_blocks)])
 
+        # TODO: could just pass np.sqrt( ... ) value to EncoderBlock, rather than this weird loop
+        # it is the same in every block.
         for be in self.enc_blocks:
             for br in be.res_blocks:
                 br.conv[-1].weight.data *= np.sqrt(1 / (nb_encoder_blocks*nb_res_blocks))

@@ -8,6 +8,8 @@ Based off OpenAI implementation found [here](https://github.com/openai/vdvae) bu
 
 Original paper can be found [here](https://arxiv.org/abs/2011.10650).
 
+VD-VAEs are quite memory hungry and currently this program does not support multiple GPUs. Tweak the `hps.py` file until it runs on your GPU.
+
 ## Modifications
 - Replacing default residual connections with ReZero connections (see citations). Might enable faster convergence at larger depths.
 - Replacing Mixture of Logistics output and loss with simple MSE reconstruction and KL loss, more weighted towards reconstruction loss.
@@ -16,9 +18,8 @@ Original paper can be found [here](https://arxiv.org/abs/2011.10650).
 ## Task List
 - [x] Basic architecture
 - [ ] **Training script**
-- [ ] Checkpointing
 - [ ] Sampling functions
-- [ ] Weight / bias initialisation (as in paper)
+- [X] Weight / bias initialisation (as in paper)
 - [ ] Gradient skipping (as in paper)
 - [ ] Explore further modifications
 
