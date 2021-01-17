@@ -10,6 +10,8 @@ Original paper can be found [here](https://arxiv.org/abs/2011.10650).
 
 ## Modifications
 - Replacing default residual connections with ReZero connections (see citations). Might enable faster convergence at larger depths.
+- Replacing Mixture of Logistics output and loss with simple MSE reconstruction and KL loss, more weighted towards reconstruction loss.
+    - May implement MoL in the future, when experimenting on more complex distributions
 
 ## Task List
 - [x] Basic architecture
