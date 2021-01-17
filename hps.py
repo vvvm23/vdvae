@@ -10,18 +10,18 @@ class Hyperparameters(dict):
 
 HPS = Hyperparameters()
 HPS['cuda'] = True
-HPS['checkpoint'] = 25
+HPS['checkpoint'] = 1
 HPS['tqdm'] = True
 
-HPS['dataset'] = 'cifar10'
+HPS['dataset'] = 'mnist' # cifar10 | mnist
 HPS['batch_size'] = 32
 
-HPS['in_channels'] = 3
-HPS['h_width'] = 384
-HPS['m_width'] = 96
+HPS['in_channels'] = 1
+HPS['h_width'] = 64
+HPS['m_width'] = 32
 HPS['z_dim'] = 16
-HPS['nb_blocks'] = 5
-HPS['nb_res_blocks'] = 8
+HPS['nb_blocks'] = 3
+HPS['nb_res_blocks'] = 2
 HPS['scale_rate'] = 2
 
 HPS['nb_iterations'] = 1_100_00
