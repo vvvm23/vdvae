@@ -121,7 +121,6 @@ if __name__ == "__main__":
         info(f"evaluate, epoch {ei+1} \t iter: {nb_iterations} \t loss: {eval_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
 
         if HPS.checkpoint > 0 and ei > 0 and ei % HPS.checkpoint == 0:
-            # TODO: Replace with full checkpointing
             torch.save(model.state_dict(), f"saved_checkpoints/{save_id}-vdvae-{ei}.pt")
 
         if nb_iterations > HPS.nb_iterations:

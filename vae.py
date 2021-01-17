@@ -156,6 +156,17 @@ class TopDownBlock(HelperModule):
 
         return x, kl
 
+    def sample(self, x):
+        pfeat = self.prior(x)
+        pm, pv, px = pfeat[:, :self.z_dim], pfeat[:, self.z_dim:self.z_dim*2], pfeat[:, self.z_dim*2:]
+        x = x + px
+
+        z = draw_gaussian_diag_samples(pm, pv)
+
+        x = x + self.z_conv(z)
+        x = self.out_res(x)
+        return x
+
 class DecoderBlock(HelperModule):
     def build(self, in_dim, middle_width, z_dim, nb_td_blocks, upscale_rate):
         self.upscale_rate = upscale_rate
@@ -171,11 +182,18 @@ class DecoderBlock(HelperModule):
             block_kl.append(kl)
         return x, block_kl
 
+    def sample(self, x):
+        x = F.interpolate(x, scale_factor=self.upscale_rate)
+        for b in self.td_blocks:
+            x = b.sample(x)
+        return x
+
 class Decoder(HelperModule):
     def build(self, in_dim, middle_width, out_dim, z_dim, nb_decoder_blocks, nb_td_blocks=3, upscale_rate=2):
         self.dec_blocks = nn.ModuleList([
             DecoderBlock(in_dim, middle_width, z_dim, nb_td_blocks, 1 if i == 0 else upscale_rate)
          for i in range(nb_decoder_blocks)])
+        self.out_dim = out_dim
         self.out_conv = ConvBuilder.b3x3(in_dim, out_dim)
 
         for bd in self.dec_blocks:
@@ -197,6 +215,15 @@ class Decoder(HelperModule):
         x = self.out_conv(x)
         return x, decoder_kl
 
+    def sample(self, nb_samples):
+        x = None
+        for b in self.dec_blocks:
+            if x == None:
+                x = torch.zeros(nb_samples, self.out_dim, 4, 4)
+            x = b.sample(x)
+        x = self.out_conv(x)
+        return x
+
 """
     Main VAE class
 """
@@ -208,6 +235,8 @@ class VAE(HelperModule):
         activations = self.encoder(x)
         y, decoder_kl = self.decoder(activations)
         return y, decoder_kl
+    def sample(self, nb_samples):
+        return self.decoder.sample(nb_samples)
 
 if __name__ == "__main__":
     import torchvision
@@ -215,4 +244,3 @@ if __name__ == "__main__":
     vae = VAE(3, 64, 32, 32, nb_blocks=6).to(device)
     x = torch.randn(1, 3, 256, 256).to(device)
     y, kls = vae(x)
-    torchvision.utils.save_image(y, "model-test.png")
