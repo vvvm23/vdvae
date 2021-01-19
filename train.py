@@ -9,11 +9,12 @@ import numpy as np
 import itertools
 import datetime
 
-from hps import HPS
-from checkpoint import Checkpoint
+from hps import get_parameters
 from helper import info, error, warning
 from helper import get_device
 from vae import VAE
+
+HPS = get_parameters('cifar10')
 
 if HPS.tqdm:
     from tqdm import tqdm
@@ -52,7 +53,7 @@ def load_dataset(dataset, batch_size):
         exit()
 
     train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
+    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True, batch_size=batch_size)
 
     return test_loader, test_loader
 
@@ -64,7 +65,7 @@ def vae_loss(x, model, crit):
     for k in decoder_kl:
         rpp += k.sum(dim=(1,2,3))
     rpp /= np.prod(x.shape[1:])
-    elbo = (rpp + rl*100).mean()
+    elbo = (rpp + rl*10).mean()
     return y, elbo, rl.mean(), rpp.mean()
 
 def train(model, loader, optim, crit, device):
@@ -120,11 +121,11 @@ if __name__ == "__main__":
         nb_iterations += len(train_loader)
 
         info(f"training, epoch {ei+1} \t iter: {nb_iterations} \t loss: {train_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
-        eval_loss, r_loss, kl_loss = evaluate(model, test_loader, optim, crit, device, img_id=ei)
+        eval_loss, r_loss, kl_loss = evaluate(model, test_loader, optim, crit, device, img_id=str(ei).zfill(4))
         info(f"evaluate, epoch {ei+1} \t iter: {nb_iterations} \t loss: {eval_loss} \t r_loss {r_loss} \t kl_loss {kl_loss}")
 
         if HPS.checkpoint > 0 and ei > 0 and ei % HPS.checkpoint == 0:
-            torch.save(model.state_dict(), f"saved_checkpoints/{save_id}-vdvae-{ei}.pt")
+            torch.save(model.state_dict(), f"saved_checkpoints/{save_id}-vdvae-{str(ei).zfill(4)}.pt")
 
         if nb_iterations > HPS.nb_iterations:
             info("Maximum iterations reached. Exiting..")
