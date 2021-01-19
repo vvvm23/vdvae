@@ -17,8 +17,8 @@ VD-VAEs are quite memory hungry and currently this program does not support mult
 
 ## Task List
 - [x] Basic architecture
-- [ ] **Training script**
-- [ ] Sampling functions
+- [X] Training script
+- [ ] **Sampling functions**
 - [X] Weight / bias initialisation (as in paper)
 - [ ] Gradient skipping (as in paper)
 - [ ] Explore further modifications

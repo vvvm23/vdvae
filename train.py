@@ -55,7 +55,7 @@ def load_dataset(dataset, batch_size):
     train_loader = torch.utils.data.DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=True, batch_size=batch_size)
 
-    return test_loader, test_loader
+    return train_loader, test_loader
 
 def vae_loss(x, model, crit):
     x = x.to(device)
