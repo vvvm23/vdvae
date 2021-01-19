@@ -16,7 +16,7 @@ def get_parameters(task):
     HPS['tqdm'] = True
 
     if task == 'cifar10':
-        HPS['dataset'] = 'cifar10' # cifar10 | stl10 | mnist
+        HPS['dataset'] = 'cifar10'
         HPS['batch_size'] = 16
 
         HPS['in_channels'] = 3
@@ -30,8 +30,23 @@ def get_parameters(task):
         HPS['nb_iterations'] = 1_100_00
         HPS['lr'] = 2e-4
         HPS['decay'] = 1e-2
+    elif task == 'stl10':
+        HPS['dataset'] = 'cifar10'
+        HPS['batch_size'] = 16
+
+        HPS['in_channels'] = 3
+        HPS['h_width'] = 128
+        HPS['m_width'] = 64
+        HPS['z_dim'] = 32
+        HPS['nb_blocks'] = 5
+        HPS['nb_res_blocks'] = 3
+        HPS['scale_rate'] = 2
+
+        HPS['nb_iterations'] = 1_100_00
+        HPS['lr'] = 2e-4
+        HPS['decay'] = 1e-2
     elif task == 'mnist':
-        HPS['dataset'] = 'mnist' # cifar10 | stl10 | mnist
+        HPS['dataset'] = 'mnist'
         HPS['batch_size'] = 32
 
         HPS['in_channels'] = 1
